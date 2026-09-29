@@ -1,0 +1,15 @@
+services:
+  articles-service-api:
+    environment:
+      #- ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/aspnetapp.pfx
+      - ASPNETCORE_Kestrel__Certificates__Default__Password=cryptic_password_123
+    ports:
+      - "8080"
+      - "8081"
+    volumes:
+      # Сертификаты: сработает и на Windows (USERPROFILE), и на Mac/Linux (HOME)
+      - ${USERPROFILE:-$HOME}/.aspnet/https:/https:ro
+      # Секреты (UserSecrets): кроссплатформенный путь
+      - ${APPDATA:-$HOME/.microsoft/usersecrets}:/root/.microsoft/usersecrets:ro
+      - ${APPDATA:-$HOME/.microsoft/usersecrets}:/home/app/.microsoft/usersecrets:ro

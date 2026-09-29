@@ -1,0 +1,255 @@
+﻿name: articles-services-system
+
+services:
+  articles-service-api:    
+    image: ${DOCKER_REGISTRY-}articles-service-api
+    container_name: articles-service-api
+    build:
+      context: .
+      dockerfile: src/Services/ArticlesService/ArticlesAPI/Dockerfile
+    ports:          
+      - "${ARTICLES_SERVICE_API_HTTP_PORT}:8080"  
+      - "${ARTICLES_SERVICE_API_HTTPS_PORT}:8081" 
+    env_file:
+      - .env
+    environment:       
+      - ASPNETCORE_ENVIRONMENT=${ARTICLES_SERVICE_ASPNETCORE_ENVIRONMENT}
+      - ASPNETCORE_URLS=https://+:8081;http://+:8080
+      - ConnectionStrings__BaseDbConnection=Host=${POSTGRES_HOST};Database=${POSTGRES_DB_NAME};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      - CacheSettings__RedisUrl=${REDIS_HOST}:6379,connectTimeout=5000,syncTimeout=5000,abortConnect=false
+      - CacheSettings__UseDistributedCache=true
+      - Logging__Seq__ServerUrl=${SEQ_SERVER_URL}
+      - Logging__Seq__ApiKey=${ARTICLES_SERVICE_SEQ_API_KEY}
+      # Переопределяем настройки для работы с HealthCheck UI (принудительно доверие внутреннему SSL-сертификату настроено в коде)
+      - HealthChecksUI__HealthChecks__0__Name=API Health
+      - HealthChecksUI__HealthChecks__0__Uri=https://articles-service-api:8081/health
+      # Переопределяем URL сервера Seq
+      # - Serilog__WriteTo__2__Args__serverUrl=${SEQ_SERVER_URL}
+      # Переопределяем apiKey через переменные окружения
+      # - Serilog__WriteTo__2__Args__apiKey=${ARTICLES_SERVICE_SEQ_API_KEY}
+    depends_on:
+      postgres_db:
+        condition: service_healthy
+      redis_cache:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      #healthcheck:
+      ##test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 && echo -e 'GET /health HTTP/1.1\r\nHost: localhost\r\n\r\n' >&3 && grep -q '200 OK' <&3"]
+      ##test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1"]
+      #test: ["CMD", "dotnet", "/app/Microsoft.AspNetCore.Diagnostics.HealthChecks.dll"]
+      #interval: 10s
+      #timeout: 5s
+      #retries: 3
+      #start_period: 30s
+    networks:
+      - articles-services-system-network
+
+  articles-outbox-worker:
+    image: ${DOCKER_REGISTRY-}articles-outbox-worker
+    container_name: articles-service-outbox-worker
+    build:
+      context: .
+      dockerfile: src/Services/ArticlesService/ArticlesWorkers/ArticlesOutboxWorker/Dockerfile
+    depends_on:
+      postgres_db:
+        condition: service_healthy      
+      kafka:
+        condition: service_healthy
+      articles-service-api:
+        condition: service_started
+    environment:
+      - DOTNET_ENVIRONMENT=${ARTICLES_OUTBOX_WORKER_ENV}
+      - Kafka__Producer__BootstrapServers=${KAFKA_BOOTSTRAP_SERVERS}
+      - ConnectionStrings__BaseDbConnection=Host=${POSTGRES_HOST};Database=${POSTGRES_DB_NAME};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      - Logging__Seq__ServerUrl=${SEQ_SERVER_URL}
+      - Logging__Seq__ApiKey=${ARTICLES_SERVICE_SEQ_API_KEY}
+    networks:
+      - articles-services-system-network
+
+  notification-service:
+    container_name: notification_service_worker
+    image: notification-service:latest
+    build:
+      context: .
+      dockerfile: src/Services/NotificationService/Dockerfile
+    env_file:
+      - .env
+    environment:
+      - DOTNET_ENVIRONMENT=${NOTIFICATION_SERVICE_DOTNET_ENVIRONMENT}
+      - Kafka__Consumer__BootstrapServers=${KAFKA_BOOTSTRAP_SERVERS}
+      - Kafka__Producer__BootstrapServers=${KAFKA_BOOTSTRAP_SERVERS}
+      - Logging__Seq__ServerUrl=${SEQ_SERVER_URL}
+      - Logging__Seq__ApiKey=${NOTIFICATION_SERVICE_SEQ_API_KEY}
+      - Redis__RedisUrl=${REDIS_HOST}:6379,connectTimeout=5000,syncTimeout=5000,abortConnect=false
+    depends_on:
+      redis_cache:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 15s    # Проверять каждые 15 секунд
+      timeout: 5s      # Ждать ответа не больше 5 секунд
+      retries: 3       # Если 3 раза подряд упал — считать контейнер мертвым (Unhealthy)
+      start_period: 10s # Дать 10 секунд на прогрев и инициализацию топиков при старте
+    networks:
+      - articles-services-system-network
+  
+  postgres_db:
+    image: postgres:18-alpine
+    container_name: postgres_db
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB_NAME}
+      # ЯВНО указываем путь к данным внутри контейнера (для решения проблемы создания анонимного тома для /var/lib/postgresql и несохранения данных в именованный том)
+      PGDATA: /var/lib/postgresql/data/pgdata 
+    volumes:
+      # Монтируем в родительскую папку, чтобы захватить ВСЁ (для решения проблемы создания анонимного тома для /var/lib/postgresql и несохранения данных в именованный том)
+      - postgres_data:/var/lib/postgresql 
+    restart: unless-stopped  #always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB_NAME}"]
+      interval: 10s  
+      timeout: 5s    
+      retries: 5     
+      start_period: 10s 
+    networks:
+      - articles-services-system-network
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+    ports:
+      - "${PGADMIN_PORT}:80"
+    depends_on:
+      postgres_db:
+        condition: service_healthy
+    volumes:
+      # Именованный том для настроек (обязательно этот путь!)
+      - pgadmin_data:/var/lib/pgadmin
+      # проброс файла серверов
+      - ./pg-admin-servers.json:/pgadmin4/servers.json
+    restart: unless-stopped #always
+    healthcheck:
+      # Проверяем главную страницу. Если вернула код 200 — значит "healthy"
+      test: ["CMD", "wget", "-O", "-", "http://localhost:80/misc/ping"]
+      interval: 10s      
+      timeout: 5s         
+      retries: 10         
+      start_period: 20s   
+    networks:
+      - articles-services-system-network
+    
+  redis_cache:
+    image: redis:8.0-alpine
+    container_name: redis_cache
+    ports:
+      - "${REDIS_PORT}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:     
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s    
+      timeout: 5s   
+      retries: 5     
+      start_period: 5s
+    networks:
+      - articles-services-system-network
+   
+  redisinsight:
+    image: redis/redisinsight:latest
+    container_name: redisinsight
+    restart: always
+    ports:
+      - "5540:5540"
+    depends_on:
+      redis_cache:
+        condition: service_healthy 
+    networks:
+      - articles-services-system-network
+  
+  seq:
+    image: datalust/seq:latest
+    container_name: seq
+    restart: unless-stopped
+    environment:
+      - ACCEPT_EULA=Y  # Подтверждение лицензионного соглашения
+      - SEQ_PASSWORD=${SEQ_PASSWORD}   
+    ports:
+     - "${SEQ_EXTERNAL_PORT}:80"
+    volumes:
+      - seq_data:/data 
+    healthcheck: 
+      test: ["CMD", "wget", "-O", "-", "http://localhost:80/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - articles-services-system-network
+    
+  kafka:
+    image: confluentinc/cp-kafka:7.8.0 
+    container_name: kafka_local
+    ports:
+      - "9092:9092"
+    environment:
+       # Настройки идентификации ноды
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_CONTROLLER_NODE_IDS: '1'
+      # Сетевые слушатели (Критически важный маппинг)
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT'
+      KAFKA_LISTENERS: 'PLAINTEXT://0.0.0.0:29092,CONTROLLER://0.0.0.0:29093,PLAINTEXT_HOST://0.0.0.0:9092'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka_local:29092,PLAINTEXT_HOST://localhost:9092'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
+      # Включение KRaft режима через указание ID кластера
+      CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka_local:29093'
+      # Настройки для стабильной локальной разработки (1 нода)
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_LOG_DIRS: '/var/lib/kafka/data'
+    healthcheck:
+      #test: ["CMD-SHELL", "nc -z localhost 29092 || exit 1"]
+      test: ["CMD", "kafka-cluster", "cluster-id", "--bootstrap-server", "localhost:29092"]
+      #test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/29092 && exec 3<&-"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+      start_period: 15s
+    networks:
+      - articles-services-system-network
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka_ui_local
+    ports:
+      - "8080:8080"
+    environment:
+      DYNAMIC_CONFIG_ENABLED: 'true'
+      KAFKA_CLUSTERS_0_NAME: 'local-cluster'
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: 'kafka:29092'
+    depends_on:
+      - kafka
+    networks:
+      - articles-services-system-network
+
+volumes:
+  postgres_data:
+  redis_data:
+  pgadmin_data:
+  seq_data:
+
+networks:
+  articles-services-system-network:
+    driver: bridge

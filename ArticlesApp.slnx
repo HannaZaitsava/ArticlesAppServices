@@ -1,0 +1,60 @@
+<Solution>
+  <Folder Name="/Solution Items/" />
+  <Folder Name="/src/" />
+  <Folder Name="/src/BuildingBlocks/" />
+  <Folder Name="/src/BuildingBlocks/Configuration/">
+    <Project Path="src/BuildingBlocks/Configuration/BuildingBlocks.Configuration.csproj" />
+  </Folder>
+  <Folder Name="/src/BuildingBlocks/Contracts/">
+    <Project Path="src/BuildingBlocks/Contracts/BuildingBlocks.Contracts.csproj" />
+  </Folder>
+  <Folder Name="/src/BuildingBlocks/IntegrationEventLogEF/">
+    <Project Path="src/BuildingBlocks/IntegrationEventLogEF/BuildingBlocks.IntegrationEventLogEF.csproj" />
+  </Folder>
+  <Folder Name="/src/BuildingBlocks/Logging/">
+    <Project Path="src/BuildingBlocks/Logging/BuildingBlocks.Logging.csproj" />
+  </Folder>
+  <Folder Name="/src/Services/" />
+  <Folder Name="/src/Services/ArticlesService/" />
+  <Folder Name="/src/Services/ArticlesService/Application/">
+    <Project Path="src/Services/ArticlesService/Application/ArticlesService.Application.csproj" />
+  </Folder>
+  <Folder Name="/src/Services/ArticlesService/ArticlesAPI/">
+    <Project Path="src/Services/ArticlesService/ArticlesAPI/ArticlesService.ArticlesAPI.csproj" />
+  </Folder>
+  <Folder Name="/src/Services/ArticlesService/ArticlesWorkers/" />
+  <Folder Name="/src/Services/ArticlesService/ArticlesWorkers/ArticlesOutboxWorker/">
+    <Project Path="src/Services/ArticlesService/ArticlesWorkers/ArticlesOutboxWorker/ArticlesOutboxWorker.csproj" />
+  </Folder>
+  <Folder Name="/src/Services/ArticlesService/Domain/">
+    <Project Path="src/Services/ArticlesService/Domain/ArticlesService.Domain.csproj" />
+  </Folder>
+  <Folder Name="/src/Services/ArticlesService/Infrastructure/" />
+  <Folder Name="/src/Services/ArticlesService/Infrastructure/Cache/">
+    <Project Path="src/Services/ArticlesService/Infrastructure/Cache/ArticlesService.Infrastructure.Cache.csproj" />
+  </Folder>
+  <Folder Name="/src/Services/ArticlesService/Infrastructure/DataAccess/">
+    <Project Path="src/Services/ArticlesService/Infrastructure/DataAccess/ArticlesService.Infrastructure.DataAccess.csproj" />
+  </Folder>
+  <Folder Name="/src/Services/NotificationService/">
+    <Project Path="src/Services/NotificationService/NotificationService.csproj" />
+  </Folder>
+  <Folder Name="/tests/" />
+  <Folder Name="/tests/ArticleServiceTests/" />
+  <Folder Name="/tests/ArticleServiceTests/ArchitectureTests/">
+    <Project Path="tests/ArticleServiceTests/ArchitectureTests/ArticlesService.Tests.ArchitectureTests.csproj" />
+  </Folder>
+  <Folder Name="/tests/ArticleServiceTests/IntegrationTests/">
+    <Project Path="tests/ArticleServiceTests/IntegrationTests/ArticlesService.Tests.IntegrationTests.csproj" />
+  </Folder>
+  <Folder Name="/tests/ArticleServiceTests/Shared/">
+    <Project Path="tests/ArticleServiceTests/Shared/ArticlesService.Tests.Shared.csproj" />
+  </Folder>
+  <Folder Name="/tests/ArticleServiceTests/UnitTests/">
+    <Project Path="tests/ArticleServiceTests/UnitTests/ArticlesService.Tests.UnitTests.csproj" />
+  </Folder>
+  <Folder Name="/tests/NotificationServiceTests/" />
+  <Project Path="docker-compose.dcproj">
+    <Build />
+  </Project>
+</Solution>

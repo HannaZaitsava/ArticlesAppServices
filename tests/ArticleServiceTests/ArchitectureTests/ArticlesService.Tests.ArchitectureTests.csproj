@@ -1,0 +1,39 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <AssemblyName>ArticlesApp.Tests.ArchitectureTests</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="10.0.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="FluentAssertions" Version="8.10.0" />
+    <PackageReference Include="Microsoft.AspNetCore.DataProtection" Version="10.0.10" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
+    <PackageReference Include="TngTech.ArchUnitNET.xUnit" Version="0.13.3" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\Services\ArticlesService\Application\ArticlesService.Application.csproj" />
+    <ProjectReference Include="..\..\..\src\Services\ArticlesService\ArticlesAPI\ArticlesService.ArticlesAPI.csproj" />
+    <ProjectReference Include="..\..\..\src\Services\ArticlesService\Domain\ArticlesService.Domain.csproj" />
+    <ProjectReference Include="..\..\..\src\Services\ArticlesService\Infrastructure\Cache\ArticlesService.Infrastructure.Cache.csproj" />
+    <ProjectReference Include="..\..\..\src\Services\ArticlesService\Infrastructure\DataAccess\ArticlesService.Infrastructure.DataAccess.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+</Project>

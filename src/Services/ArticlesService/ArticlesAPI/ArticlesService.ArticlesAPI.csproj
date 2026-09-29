@@ -1,0 +1,57 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>7ba50fda-1560-4199-bdea-d2ae52b073de</UserSecretsId>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);1591</NoWarn>
+    <DockerComposeProjectPath>..\docker-compose.dcproj</DockerComposeProjectPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="DIExtensions\**" />
+    <Content Remove="DIExtensions\**" />
+    <EmbeddedResource Remove="DIExtensions\**" />
+    <None Remove="DIExtensions\**" />
+  </ItemGroup> 
+
+  <ItemGroup>   
+    <PackageReference Include="AspNetCore.HealthChecks.Redis" Version="9.0.0" />   
+    <PackageReference Include="AspNetCore.HealthChecks.UI" Version="9.0.0" />   
+    <PackageReference Include="AspNetCore.HealthChecks.UI.Client" Version="9.0.0" />   
+    <PackageReference Include="IdentityModel" Version="5.2.0" />   
+    <PackageReference Include="KubernetesClient" Version="19.0.2" />   
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.11" />   
+    <PackageReference Include="Microsoft.AspNetCore.OData" Version="9.5.0" />   
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.10" />   
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.10">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.23.0" />
+    <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="10.2.3" />
+    <PackageReference Include="Swashbuckle.AspNetCore.Annotations" Version="10.2.3" />
+    <PackageReference Include="Swashbuckle.AspNetCore.Filters" Version="10.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\BuildingBlocks\Configuration\BuildingBlocks.Configuration.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\Logging\BuildingBlocks.Logging.csproj" />
+    <ProjectReference Include="..\Application\ArticlesService.Application.csproj" />
+    <ProjectReference Include="..\Infrastructure\Cache\ArticlesService.Infrastructure.Cache.csproj" />
+    <ProjectReference Include="..\Infrastructure\DataAccess\ArticlesService.Infrastructure.DataAccess.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Middlewares\" />
+    <Folder Include="Models\SwaggerExamples\" />
+  </ItemGroup>
+
+</Project>
