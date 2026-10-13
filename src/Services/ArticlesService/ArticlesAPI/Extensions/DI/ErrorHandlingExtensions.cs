@@ -34,7 +34,7 @@ namespace ArticlesService.ArticlesAPI.Extensions.DI
                 StatusCodeSelector = ex => ex switch
                 {
                     ArgumentException => StatusCodes.Status400BadRequest,
-                    BaseDomainException => StatusCodes.Status400BadRequest,
+                    DomainException => StatusCodes.Status400BadRequest,
                     ValidationException => StatusCodes.Status400BadRequest,
                     NotImplementedException => StatusCodes.Status501NotImplemented,
                     UnauthorizedAccessException => StatusCodes.Status401Unauthorized,

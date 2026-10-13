@@ -2,7 +2,7 @@
 
 namespace ArticlesService.Domain.Exceptions
 {
-    public class InvalidSortPropertyException : BaseDomainException
+    public class InvalidSortPropertyException : DomainException
     {
         public InvalidSortPropertyException(string entityName, string propertyName)
             : base($"Entity '{entityName}' does not contain a sortable field '{propertyName}'")

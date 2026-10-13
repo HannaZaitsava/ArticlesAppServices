@@ -23,7 +23,7 @@ namespace ArticlesService.ArticlesAPI.Handlers
                 httpContext.Request.Method,
                 httpContext.Request.Path);
 
-            var businessEx = exception is BaseDomainException;
+            var businessEx = exception is DomainException;
             var isDevelopment = env.IsDevelopment();
                        
             var problemDetails = new ProblemDetails
@@ -62,16 +62,7 @@ namespace ArticlesService.ArticlesAPI.Handlers
              */
             // Работает только если клиентская сторона может принимать ответы типа application/json
             var isHandled = await problemDetailsService.TryWriteAsync(problemDetailsContext);
-            return isHandled;
-
-            //// fallback
-            //if(!isHadled)
-            //{
-            //    httpContext.Response.StatusCode = statusCode;
-            //    httpContext.Response.ContentType = "application/problem+json";
-            //    await httpContext.Response.WriteAsJsonAsync(problemDetails, cancellationToken);
-            //    return true;
-            //}
+            return isHandled;          
         }
 
         private static string[] SplitStackTrace(string? stackTrace)
