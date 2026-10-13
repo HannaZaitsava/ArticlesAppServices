@@ -1,4 +1,5 @@
-﻿using ArticlesService.Application.Abstractions.DataAccess;
+﻿using ArticlesService.Application.Abstractions;
+using ArticlesService.Application.Abstractions.DataAccess;
 using ArticlesService.Application.Common.Caching;
 using ArticlesService.Domain.Errors;
 using ArticlesService.Domain.Result;
@@ -10,6 +11,7 @@ namespace ArticlesService.Application.CQRS.Commands.ArticleCommands.PublishArtic
         IArticleRepository articleRepository,
         IUnitOfWork unitOfWork,
         TimeProvider timeProvider,
+        IUserContext userContext,
         ICacheInvalidationContext cacheContext) 
         : IRequestHandler<PublishArticleCommand, Result<bool>>
     {
@@ -22,11 +24,18 @@ namespace ArticlesService.Application.CQRS.Commands.ArticleCommands.PublishArtic
 
             if (articleEntity is null)
                 return Result<bool>.Failure([ArticleErrors.ArticleNotFound(articleId)]);
-            
-            var publishingError = articleEntity.Publish(timeProvider.GetUtcNow());
 
-            if(publishingError is not null)
-                return Result<bool>.Failure([publishingError]);
+            if (!userContext.IsAuthenticated || articleEntity.CreatedBy != userContext.UserId)
+            {
+                // Можно вернуть 403, но возвращаем NotFound для безопасности, чтобы скрыть сам факт существования статьи.
+                // Чтобы злоумышленник не мог перебором GUID узнать, существует ли статья в системе
+                return Result<bool>.Failure([ArticleErrors.ArticleNotFound(articleId)]);
+            }
+
+            var publishResult = articleEntity.Publish(timeProvider.GetUtcNow());
+
+            if (publishResult.IsFailure)
+                return publishResult;
 
             await unitOfWork.SaveChangesAsync(cancellationToken);
 
@@ -49,7 +58,7 @@ namespace ArticlesService.Application.CQRS.Commands.ArticleCommands.PublishArtic
                     cacheContext.AddTag(CacheTags.Tag(tag.Id));
             }
 
-            return Result<bool>.Success(true);           
+            return publishResult;           
         }
     }
 }

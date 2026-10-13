@@ -1,5 +1,6 @@
 ﻿using ArticlesService.Application.CQRS.Commands.ArticleCommands.UpdateArticle;
 using ArticlesService.Application.CQRS.Queries.ArticleQueries.GetAllArticlesQuery;
+using ArticlesService.Application.CQRS.Queries.My.GetAllMyArticlesQuery;
 using ArticlesService.ArticlesAPI.Models.Requests;
 using Mapster;
 
@@ -14,6 +15,10 @@ namespace ArticlesService.ArticlesAPI.Models.MappingConfigurations
                .Map(dest => dest, src => src.requestBody);
 
             config.NewConfig<GetArticlesPaginatedApiRequest, GetAllArticlesQuery>()
+            .Map(dest => dest.PaginationParameters.PageIndex, src => src.PageIndex)
+            .Map(dest => dest.PaginationParameters.PageSize, src => src.PageSize);
+
+            config.NewConfig<GetMyArticlesPaginatedApiRequest, GetAllMyArticlesQuery>()
             .Map(dest => dest.PaginationParameters.PageIndex, src => src.PageIndex)
             .Map(dest => dest.PaginationParameters.PageSize, src => src.PageSize);
         }

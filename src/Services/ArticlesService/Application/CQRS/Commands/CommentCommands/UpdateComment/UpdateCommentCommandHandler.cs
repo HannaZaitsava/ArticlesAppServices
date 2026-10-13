@@ -1,4 +1,5 @@
-﻿using ArticlesService.Application.Abstractions.DataAccess;
+﻿using ArticlesService.Application.Abstractions;
+using ArticlesService.Application.Abstractions.DataAccess;
 using ArticlesService.Application.Common.Caching;
 using ArticlesService.Domain.Entities;
 using ArticlesService.Domain.Errors;
@@ -11,6 +12,7 @@ namespace ArticlesService.Application.CQRS.Commands.CommentCommands.UpdateCommen
     internal class UpdateCommentCommandHandler(
         IBaseRepository<Comment> repository,
         ICacheInvalidationContext cacheContext,
+        IUserContext userContext,
         IMapper mapper)
         : IRequestHandler<UpdateCommentCommand, Result<bool>>
     {
@@ -23,6 +25,13 @@ namespace ArticlesService.Application.CQRS.Commands.CommentCommands.UpdateCommen
             if (commentEntity is null)
             {
                 return Result<bool>.Failure([CommentErrors.CommentNotFound(commentId)]);
+            }
+
+            if (!userContext.IsAuthenticated || commentEntity.CreatedBy != userContext.UserId)
+            {
+                // Можно вернуть 403, но возвращаем NotFound для безопасности, чтобы скрыть сам факт существования комментария.
+                // Чтобы злоумышленник не мог перебором GUID узнать, существует ли комментарий в системе
+                return Result<bool>.Failure([ArticleErrors.ArticleNotFound(commentId)]);
             }
 
             mapper.Map(request, commentEntity);

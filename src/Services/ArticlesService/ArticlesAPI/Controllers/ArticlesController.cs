@@ -33,12 +33,19 @@ namespace ArticlesService.ArticlesAPI.Controllers
         }
 
         /// <summary>
-        /// Get article by identifier.
+        /// Retrieves a specific article by its unique identifier.
         /// </summary>
-        /// <param name="id">Article identifier (GUID).</param>
-        /// <param name="cancellationToken">Cancellation token.</param>
-        /// <response code="200">Article found and returned.</response>
-        /// <response code="404">Article with specified id was not found.</response>
+        /// <remarks>
+        /// <b>Access Restrictions:</b>
+        /// <ul>
+        /// <li>Published articles are publicly accessible to anyone.</li>
+        /// <li>Non-published articles (Drafts, Pending Review, etc.) can only be retrieved by their respective authors.</li>
+        /// </ul>
+        /// </remarks>
+        /// <param name="id">The unique article identifier (GUID).</param>
+        /// <param name="cancellationToken">A token to monitor for operation cancellation requests.</param>
+        /// <response code="200">The article was successfully found and returned.</response>
+        /// <response code="404">The article was not found, or you do not have permission to view it.</response>
         [HttpGet("{id:guid}", Name = "GetArticle")]
         [ProducesResponseType(typeof(ArticleApiResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]

@@ -1,5 +1,7 @@
-﻿using ArticlesService.Application.Abstractions.DataAccess;
+﻿using ArticlesService.Application.Abstractions;
+using ArticlesService.Application.Abstractions.DataAccess;
 using ArticlesService.Application.Common.Caching;
+using ArticlesService.Application.DTOs.Articles;
 using ArticlesService.Domain.Errors;
 using ArticlesService.Domain.Result;
 using MediatR;
@@ -8,7 +10,8 @@ namespace ArticlesService.Application.CQRS.Commands.ArticleCommands.DeleteArticl
 {
     internal class DeleteArticleCommandHandler(
         IArticleRepository repository,
-        ICacheInvalidationContext cacheContext) 
+        ICacheInvalidationContext cacheContext,
+        IUserContext userContext) 
         : IRequestHandler<DeleteArticleCommand, Result<bool>>
     {
         public async Task<Result<bool>> Handle(DeleteArticleCommand request, CancellationToken cancellationToken)
@@ -19,6 +22,13 @@ namespace ArticlesService.Application.CQRS.Commands.ArticleCommands.DeleteArticl
 
             if (articleEntity is null)
             {
+                return Result<bool>.Failure([ArticleErrors.ArticleNotFound(articleId)]);
+            }
+
+            if (!userContext.IsAuthenticated || articleEntity.CreatedBy != userContext.UserId)
+            {
+                // Можно вернуть 403, но возвращаем NotFound для безопасности, чтобы скрыть сам факт существования статьи.
+                // Чтобы злоумышленник не мог перебором GUID узнать, существует ли статья в системе
                 return Result<bool>.Failure([ArticleErrors.ArticleNotFound(articleId)]);
             }
 

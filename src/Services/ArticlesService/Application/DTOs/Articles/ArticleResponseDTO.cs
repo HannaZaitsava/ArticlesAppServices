@@ -1,13 +1,18 @@
 ﻿using ArticlesService.Application.DTOs.ArticleCategories;
 using ArticlesService.Application.DTOs.Tags;
+using ArticlesService.Domain.Enums;
 
 namespace ArticlesService.Application.DTOs.Articles
 {
     public sealed record ArticleResponseDTO
     {
         public Guid Id { get; init; }
-        public string Title { get; init; } = null!;
-        public string Content { get; init; } = null!;
+        public ArticleStatus Status { get; init; }
+
+        public string Title { get; init; } = default!;
+        public string Content { get; init; } = default!;
+        public string PreviewText { get; init; } = default!;
+
         public DateTimeOffset? PublicationDate { get; init; }
 
         public DateTimeOffset CreatedOn { get; init; } = DateTimeOffset.Now;

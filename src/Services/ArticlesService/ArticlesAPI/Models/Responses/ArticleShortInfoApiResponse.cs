@@ -1,10 +1,15 @@
-﻿namespace ArticlesService.ArticlesAPI.Models.Responses
+﻿using ArticlesService.ArticlesAPI.Models.Enums;
+
+namespace ArticlesService.ArticlesAPI.Models.Responses
 {
     public sealed record ArticleShortInfoApiResponse
     {
         public Guid Id { get; init; }
+        public ApiArticleStatus Status { get; init; }
+
         public string Title { get; init; } = null!;
-        public string Content { get; init; } = null!;
+        public string PreviewText { get; init; } = null!;
+
         public DateTimeOffset PublicationDate { get; init; } = DateTimeOffset.UtcNow;
 
         public DateTimeOffset CreatedOn { get; init; } = DateTimeOffset.UtcNow;

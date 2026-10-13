@@ -3,6 +3,7 @@ using ArticlesService.Application.Common.Constants;
 using ArticlesService.Application.DTOs.Articles;
 using ArticlesService.Application.RequestFeatures.OffsetPagination;
 using ArticlesService.Application.RequestFeatures.Sorting;
+using ArticlesService.Domain.Enums;
 using ArticlesService.Domain.Result;
 using MediatR;
 
@@ -12,6 +13,7 @@ namespace ArticlesService.Application.CQRS.Queries.ArticleQueries.GetAllArticles
         IRequest<Result<OffsetPagedResult<ArticleShortInfoResponseDTO>>>,
         ICachableRequest
     {
+        public ArticleStatus Status { get; init; } = ArticleStatus.Published;
         public ArticleSortItem? Sorts { get; init; } = null;
        
         public OffsetPaginationParameters PaginationParameters { get; init; } = new()

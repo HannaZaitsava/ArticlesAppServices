@@ -29,7 +29,6 @@ namespace ArticlesApp.Infrastructure.DataAccess.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("Content")
-                        .IsRequired()
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
 
@@ -50,6 +49,11 @@ namespace ArticlesApp.Infrastructure.DataAccess.Migrations
 
                     b.Property<DateTimeOffset?>("LastModifiedOn")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("PreviewText")
+                        .HasMaxLength(305)
+                        .IsUnicode(true)
+                        .HasColumnType("character varying(305)");
 
                     b.Property<DateTimeOffset?>("PublicationDate")
                         .HasColumnType("timestamp with time zone");

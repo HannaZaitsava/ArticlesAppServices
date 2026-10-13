@@ -1,0 +1,64 @@
+﻿using Microsoft.EntityFrameworkCore.Migrations;
+
+#nullable disable
+
+namespace ArticlesApp.Infrastructure.DataAccess.Migrations
+{
+    /// <inheritdoc />
+    public partial class AddPreviewTextToArticles : Migration
+    {
+        /// <inheritdoc />
+        protected override void Up(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.AlterColumn<string>(
+                name: "Content",
+                table: "Articles",
+                type: "character varying(1000)",
+                maxLength: 1000,
+                nullable: true,
+                oldClrType: typeof(string),
+                oldType: "character varying(1000)",
+                oldMaxLength: 1000);
+
+            migrationBuilder.AddColumn<string>(
+                name: "PreviewText",
+                table: "Articles",
+                type: "character varying(305)",
+                maxLength: 305,
+                nullable: true);
+
+            migrationBuilder.Sql(@"
+            UPDATE ""Articles"" 
+            SET ""Status"" = 1 
+            WHERE ""Status"" = 0 OR ""Status"" IS NULL;");
+
+            migrationBuilder.Sql(@"
+            UPDATE ""Articles"" 
+            SET ""PreviewText"" = CASE 
+                WHEN LENGTH(""Content"") > 300 THEN LEFT(""Content"", 300) || '...'
+                ELSE ""Content"" 
+            END
+            WHERE ""Content"" IS NOT NULL AND ""PreviewText"" IS NULL;");
+        }
+
+        /// <inheritdoc />
+        protected override void Down(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.DropColumn(
+                name: "PreviewText",
+                table: "Articles");
+
+            migrationBuilder.AlterColumn<string>(
+                name: "Content",
+                table: "Articles",
+                type: "character varying(1000)",
+                maxLength: 1000,
+                nullable: false,
+                defaultValue: "",
+                oldClrType: typeof(string),
+                oldType: "character varying(1000)",
+                oldMaxLength: 1000,
+                oldNullable: true);
+        }
+    }
+}

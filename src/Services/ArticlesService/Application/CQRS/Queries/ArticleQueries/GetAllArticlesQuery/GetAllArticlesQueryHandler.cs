@@ -15,6 +15,7 @@ namespace ArticlesService.Application.CQRS.Queries.ArticleQueries.GetAllArticles
             var articles = await articleRepository.GetArticlesOffsetPagedListProjectedAsync<ArticleShortInfoResponseDTO>(
                 sort: request.Sorts,
                 paginationParameters: request.PaginationParameters,
+                filterPredicate: x => x.Status == request.Status,
                 ct: cancellationToken);
             
             return Result<OffsetPagedResult<ArticleShortInfoResponseDTO>>.Success(articles);

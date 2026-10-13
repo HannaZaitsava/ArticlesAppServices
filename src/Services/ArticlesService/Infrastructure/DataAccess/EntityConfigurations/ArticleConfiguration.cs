@@ -19,6 +19,8 @@ namespace ArticlesService.Infrastructure.DataAccess.EntityConfigurations
             builder.HasIndex(a => new { a.Title, a.Id })
                 .HasDatabaseName("IX_Articles_Title_Id");
 
+            builder.Property(x => x.Status)
+                .IsRequired();
 
             builder.Property(x => x.PublicationDate)
                .IsRequired(false);
@@ -28,7 +30,14 @@ namespace ArticlesService.Infrastructure.DataAccess.EntityConfigurations
                 .HasMaxLength(ArticleConstraints.TitleMaxLength);
 
             builder.Property(x => x.Content)
-                .HasMaxLength(ArticleConstraints.ContentMaxLength);            
+                .HasMaxLength(ArticleConstraints.ContentMaxLength);
+
+            builder.Property(a => a.PreviewText)
+           // Задаем точную максимальную длину с запасом под троеточие
+           .HasMaxLength(ArticleConstraints.PreviewTextMaxLength + 5)
+           // Отключаем Unicode, если пишем только на английском (сохранит в VARCHAR вместо NVARCHAR).
+           // Но если статья может быть на русском, IsUnicode(true) оставляем (по дефолту true).
+           .IsUnicode(true);
 
             builder
               .HasMany(e => e.Categories)

@@ -2,13 +2,15 @@
 using ArticlesService.Domain.Entities.Base;
 using ArticlesService.Domain.Enums;
 using ArticlesService.Domain.Errors;
+using ArticlesService.Domain.Result;
 
 namespace ArticlesService.Domain.Entities
 {
     public class Article : BaseAuditableEntity
     {
         public string Title { get; set; } = null!;
-        public string Content { get; set; } = null!;
+        public string? Content { get; set; } 
+        public string? PreviewText { get; set; }
 
         public ArticleStatus Status { get; private set; } = ArticleStatus.Draft;
 
@@ -19,19 +21,23 @@ namespace ArticlesService.Domain.Entities
         public ICollection<Comment> Comments { get; set; } = [];
         public ICollection<Tag> Tags { get; set; } = [];
 
-        public DateTimeOffset? PublicationDate { get; private set; } 
-        
-        public Error? Publish(DateTimeOffset publishedAt)
+        public DateTimeOffset? PublicationDate { get; private set; }
+
+        public Result<bool> Publish(DateTimeOffset publishedAt)
         {
             if (Status == ArticleStatus.Published)
-                return ArticleErrors.ArticleAlreadyPublished(Id);
+                return Result<bool>.Failure([ArticleErrors.ArticleAlreadyPublished(Id)]);
+
+            // статья должна иметь контент для публикации
+            if (string.IsNullOrWhiteSpace(Content))
+                return Result<bool>.Failure([ArticleErrors.EmptyContentCannotBePublished(Id)]);
 
             PublicationDate = publishedAt;
             Status = ArticleStatus.Published;
 
-            RaiseDomainEvent(new ArticlePublishedDomainEvent(Id, Title, (Guid)CreatedBy!, (DateTimeOffset)PublicationDate));
+            RaiseDomainEvent(new ArticlePublishedDomainEvent(Id, Title, CreatedBy!.Value, PublicationDate.Value));
 
-            return null;
+            return Result<bool>.Success(true);
         }
-    }
+    }    
 }

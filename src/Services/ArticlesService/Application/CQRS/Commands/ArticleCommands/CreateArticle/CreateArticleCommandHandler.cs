@@ -1,13 +1,14 @@
-﻿using ArticlesService.Application.Common.Events;
-using MapsterMapper;
-using MediatR;
+﻿using ArticlesService.Application.Abstractions;
+using ArticlesService.Application.Abstractions.DataAccess;
+using ArticlesService.Application.Common.Caching;
+using ArticlesService.Application.Common.Helpers;
+using ArticlesService.Application.DTOs.Articles;
+using ArticlesService.Domain.Constants.EntityConstraints;
 using ArticlesService.Domain.Entities;
 using ArticlesService.Domain.Errors;
 using ArticlesService.Domain.Result;
-using ArticlesService.Application.Abstractions;
-using ArticlesService.Application.Abstractions.DataAccess;
-using ArticlesService.Application.DTOs.Articles;
-using ArticlesService.Application.Common.Caching;
+using MapsterMapper;
+using MediatR;
 
 namespace ArticlesService.Application.CQRS.Commands.ArticleCommands.CreateArticle
 {  
@@ -29,10 +30,24 @@ namespace ArticlesService.Application.CQRS.Commands.ArticleCommands.CreateArticl
                 return Result<ArticleResponseDTO>.Failure([ArticleErrors.ArticleAlreadyExists(request.Title)]);
             }
 
-            // Маппим основные поля (Title, Content)
             var article = mapper.Map<Article>(request);
-            
-            // Загружаем связанные сущности из БД по списку ID
+
+            // TODO: пеервести анемичную доменную модель на богатую. Перенести урезание контента в метод SetPreviewText самой сущности
+            if (!string.IsNullOrWhiteSpace(article.Content))
+            {
+                // Очищаем контент статьи от разметки и небезопасных инъекций
+                string plainText = ArticleContextSanitizer.ToPlainText(article.Content);
+
+                // Обрезаем до лимита из ваших констант ArticleConstraints
+                article.PreviewText = plainText.Length > ArticleConstraints.PreviewTextMaxLength
+                    ? plainText.Substring(0, ArticleConstraints.PreviewTextMaxLength) + "..."
+                    : plainText;
+            }
+            else
+            {
+                article.PreviewText = null;
+            }
+
             if (request.Tags is { Count: > 0 })
             {
                 var foundTags = await tagRepository.GetAllAsync(t => request.Tags.Contains(t.Id), true, cancellationToken);
