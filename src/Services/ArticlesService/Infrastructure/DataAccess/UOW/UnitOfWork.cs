@@ -55,43 +55,48 @@ namespace ArticlesService.Infrastructure.DataAccess.UOW
         }
 
         public async Task<TResponse> ExecuteInTransactionAsync<TResponse>(
-        Func<Task<TResponse>> action,
+        Func<CancellationToken, Task<TResponse>> action,
         CancellationToken cancellationToken = default)
         {
             // Проверяем, нет ли уже активной транстанции
             if (_context.Database.CurrentTransaction != null)
             {
-                return await action();
+                return await action(cancellationToken);
             }
 
-            // Создаем стратегию повторов EF Core (от сетевых сбоев )
+            // Создаем стратегию повторов EF Core (от сетевых сбоев)
             var strategy = _context.Database.CreateExecutionStrategy();
 
-            return await strategy.ExecuteAsync(async () =>
-            {
-                await BeginTransactionAsync(cancellationToken);
-                await using var transaction = _currentTransaction!;//await BeginTransactionAsync(cancellationToken);
-                try
+            // Передаем внешний cancellationToken в стратегию.
+            // Стратегия внутри себя создает и контролирует токен 'ct' для каждой попытки.
+            return await strategy.ExecuteAsync<TResponse>(
+                operation: async (ct) =>
                 {
-                    var response = await action();
+                    await BeginTransactionAsync(ct);
+                    await using var transaction = _currentTransaction!;
 
-                    // Проверяем, не вернул ли хэндлер ошибку бизнес-логики (Result.Failure)
-                    if (response is IResult result && !result.IsSuccess)
+                    try
                     {
-                        await transaction.RollbackAsync(cancellationToken);
+                        var response = await action(ct);
+
+                        // Проверяем, не вернул ли хэндлер ошибку бизнес-логики (Result.Failure)
+                        if (response is IResult result && !result.IsSuccess)
+                        {
+                            await transaction.RollbackAsync(ct);
+                            return response;
+                        }
+
+                        // Если всё успешно — коммитим в БД
+                        await transaction.CommitAsync(ct);
                         return response;
                     }
-
-                    // Если всё успешно — коммитим в БД
-                    await transaction.CommitAsync(cancellationToken);
-                    return response;
-                }
-                catch (Exception)
-                {
-                    await transaction.RollbackAsync(cancellationToken);
-                    throw;
-                }
-            });
+                    catch (Exception)
+                    {
+                        await transaction.RollbackAsync(ct);
+                        throw;
+                    }
+                },
+                cancellationToken);
         }
 
         public async Task RollbackTransactionAsync(CancellationToken cancellationToken = default)

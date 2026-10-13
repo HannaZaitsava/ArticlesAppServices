@@ -17,7 +17,7 @@ namespace ArticlesService.Application.Common.Behaviors
             RequestHandlerDelegate<TResponse> next,
             CancellationToken cancellationToken)
         {
-            var response = await next();
+            var response = await next(cancellationToken);
                        
             if (response is { IsSuccess: true } && cacheContext.Tags.Count > 0)
             {                

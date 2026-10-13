@@ -20,11 +20,11 @@ namespace ArticlesService.Application.Common.Behaviors
             {
                 if (request.GetType().Name.EndsWith("Query"))
                 {
-                    return await next();
+                    return await next(cancellationToken);
                 }              
 
                 return await unitOfWork.ExecuteInTransactionAsync(
-                    action: async () =>
+                    action: async (ct) =>  // этот токен будет сгенерирован самой стратегией повторов
                     {
                         var transactionId = unitOfWork.CurrentTransactionId ?? Guid.Empty;
 
@@ -32,7 +32,7 @@ namespace ArticlesService.Application.Common.Behaviors
                         {
                             logger.LogInformation("Begin transaction {TransactionId} for {CommandName} ({@Command})", transactionId, typeName, request);
 
-                            response = await next();
+                            response = await next(ct);
 
                             logger.LogInformation("Commit transaction {TransactionId} for {CommandName}", transactionId, typeName);
                         }

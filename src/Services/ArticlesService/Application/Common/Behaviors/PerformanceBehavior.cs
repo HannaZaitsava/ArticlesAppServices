@@ -21,7 +21,7 @@ namespace ArticlesService.Application.Common.Behaviors
         public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
         {
             var stopwatch = Stopwatch.StartNew();
-            var response = await next();
+            var response = await next(cancellationToken);
             stopwatch.Stop();
             var elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
             if (elapsedMilliseconds > 500) // Log slow requests

@@ -8,6 +8,6 @@
         Task BeginTransactionAsync(CancellationToken ct = default);
         Task CommitTransactionAsync(CancellationToken ct = default);
         Task RollbackTransactionAsync(CancellationToken ct = default);
-        Task<TResponse> ExecuteInTransactionAsync<TResponse>(Func<Task<TResponse>> action, CancellationToken cancellationToken = default);
+        Task<TResponse> ExecuteInTransactionAsync<TResponse>(Func<CancellationToken, Task<TResponse>> action, CancellationToken cancellationToken = default);
     }
 }

@@ -26,7 +26,7 @@ namespace ArticlesService.Application.Common.Behaviors
 
             try
             {
-                var response = await next();
+                var response = await next(cancellationToken);
 
                 stopwatch.Stop();
                 _logger.LogInformation("Completed request: {Name} in {ElapsedMilliseconds}ms",
