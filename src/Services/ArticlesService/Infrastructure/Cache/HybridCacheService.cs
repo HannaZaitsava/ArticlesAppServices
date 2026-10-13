@@ -13,22 +13,22 @@ namespace ArticlesService.Infrastructure.Cache
         HybridCache hybridCache, 
         ILogger<HybridCacheService> logger,
         IOptionsMonitor<CacheOptions> cacheSettings) : ICacheService
-    {
+    {   
         public async ValueTask<TResponse> GetOrSetAsync<TResponse>(
-            string requestCacheKey,
-            Func<CancellationToken, ValueTask<TResponse>> factory,
-            int? requestExpirationSeconds,
-            int? requestLocalCacheExpirationSeconds,
-            bool bypassCacheRead,
-            IEnumerable<string>? tags = null,
-            CancellationToken ct = default)
+        string requestCacheKey,
+        Func<CancellationToken, ValueTask<TResponse>> factory,
+        int? requestExpirationSeconds,
+        int? requestLocalCacheExpirationSeconds,
+        bool bypassCacheRead,
+        IEnumerable<string>? tags = null,
+        CancellationToken ct = default)
         {
             var currentSettings = cacheSettings.CurrentValue;
 
             var hybridCacheEntryOptions = BuildOptions(currentSettings, requestExpirationSeconds, requestLocalCacheExpirationSeconds, bypassCacheRead);
 
             var sw = Stopwatch.StartNew();
-            bool isHit = true;
+            bool isHit = true; 
 
             try
             {
@@ -42,32 +42,38 @@ namespace ArticlesService.Infrastructure.Cache
                     try
                     {
                         // Вызываем HybridCache только для чистых данных DTO, минуя сам класс Result
+                        // Используется State Pattern для передачи фабрики, чтобы не было замыкания и лишней аллокации
                         var cachedData = await hybridCache.GetOrCreateAsync(
-                        requestCacheKey,
-                        ///TODO: оптимизировать аллокацию делегатов (State pattern), чтобы избавиться от замыканий
-                        async token => await ExecuteFactoryAsync(
-                            async token =>
+                            requestCacheKey,
+                            state: factory,
+                            factory: static async (state, token) =>
                             {
-                                isHit = false;
-
-                                var executionResult = await factory(token);
-
-                                var result = (IResult)executionResult!;
-                                if (!result.IsSuccess)
+                                IResult executionResult;
+                                var originalFactory = state;
+                                try
+                                {      
+                                    // В High-Load лучше использовать token от HybridCache, 
+                                    // чтобы отмена запроса одним пользователем не ломала сборку кэша для остальных:
+                                    // пользователь отменил запрос на получение данных, но кэш все равно заполнится, чтобы другие пользователи,
+                                    // кототрые отправили такой же запрос и теперь стоят заблокированные в очереди за закэшированными данными, не получили отказ кэша
+                                    executionResult = (IResult)(await originalFactory(token))!;
+                                }
+                                catch (Exception ex) // обработка ошибки ТОЛЬКО бизнес-логики
                                 {
-                                    // Если хэндлер вернул IsFailure, бросаем внутренний сбой, чтобы HybridCache не записывал её в кэш
+                                    throw new FactoryException(ex);
+                                }
+
+                                if (!executionResult.IsSuccess)
+                                {
                                     throw new CacheBypassException(executionResult!);
                                 }
 
-                                //return result.RawValue; // Возвращаем чистый PagedResult для сохранения в Redis
-
                                 // Сериализуем успешный Result в строку для сохранения в Redis/InMemory
-                                return System.Text.Json.JsonSerializer.Serialize(result.RawValue);
-                            }
-                        , token),
-                        hybridCacheEntryOptions,
-                        tags,
-                        ct
+                                return System.Text.Json.JsonSerializer.Serialize(executionResult.RawValue);
+                            },
+                            hybridCacheEntryOptions,
+                            tags,
+                            ct // Внешний токен отменяет только ОЖИДАНИЕ ответа этим пользователем
                         );
 
                         LogCacheResult(isHit, requestCacheKey, sw.ElapsedMilliseconds);
@@ -81,27 +87,32 @@ namespace ArticlesService.Infrastructure.Cache
                             .GetMethod("Success", BindingFlags.Public | BindingFlags.Static)!
                             .Invoke(null, [deserializedData])!;
                     }
-                    // обрабатываем ТОЛЬКО ошибки инфраструктуры кэша 
-                    catch (Exception ex) when (ex is not FactoryException)
-                    {
-                        logger.LogError(ex, "Cache read failure for key: {Key}. Falling back directly to database.", requestCacheKey);
-
-                        return await factory(ct);
-                    }
-                    // обрабатываем ошибку из хэндлера, чтобы глобальный Middleware получил оригинал
                     catch (FactoryException ex)
                     {
-                        throw ex.InnerException!;
+                        // обрабатываем ошибку из хендлера, чтобы глобальный Middleware получил оригинал                        
+                        throw ex.InnerException ?? ex;
+                    }
+                    catch (CacheBypassException ex)
+                    {
+                        return (TResponse)ex.ResultObject;
+                    }
+                    catch (Exception ex) 
+                    {
+                        // Ошибка ИНФРАСТРУКТУРЫ КЭША
+                        logger.LogError(ex, "Cache read failure for key: {Key}. Falling back directly to database.", requestCacheKey);
+                        return await factory(ct);
                     }
                 }
 
-                // Фолбек: если запрос не использует Result Pattern, кэшируем как обычно
+                // Фоллбек для стандартных типов (без IResult)
                 var standardResult = await hybridCache.GetOrCreateAsync(
                     requestCacheKey,
-                    //async token => { isHit = false; return await factory(); },
-                    async token => await ExecuteFactoryAsync(
-                        async token => { isHit = false; return await factory(token); }
-                        , token),
+                    state: (factory, ct),
+                    factory: static async (state, token) =>
+                    {
+                        var (originalFactory, originalCt) = state;
+                        return await originalFactory(token);
+                    },
                     hybridCacheEntryOptions,
                     tags,
                     ct
@@ -112,36 +123,13 @@ namespace ArticlesService.Infrastructure.Cache
             }
             catch (CacheBypassException ex)
             {
-                // Если хэндлер вернул IsFailure, возвращаем исходный ошибочный Result клиенту.
                 return (TResponse)ex.ResultObject;
             }
             finally
             {
                 sw.Stop();
             }
-        }
-
-        /// <summary>
-        /// Вспомогательный метод для маркировки ошибок фабрики(хендлера)
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="factory"></param>
-        /// <param name="token"></param>
-        /// <returns></returns>
-        /// <exception cref="FactoryException"></exception>
-        private static async ValueTask<T> ExecuteFactoryAsync<T>(
-            Func<CancellationToken, ValueTask<T>> factory,
-            CancellationToken token)
-        {
-            try
-            {
-                return await factory(token);
-            }
-            catch (Exception ex) when (ex is not CacheBypassException)
-            {
-                throw new FactoryException(ex);
-            }
-        }
+        }       
 
         private void LogCacheResult(bool isHit, string key, long elapsedMs)
         {

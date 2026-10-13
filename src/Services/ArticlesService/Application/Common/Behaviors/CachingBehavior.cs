@@ -14,9 +14,9 @@ namespace ArticlesService.Application.Common.Behaviors
     {       
         public async Task<TResponse> Handle(
             TRequest request,
-            RequestHandlerDelegate<TResponse> next,
+            RequestHandlerDelegate<TResponse> next,            
             CancellationToken ct)
-        {
+        {            
             // Если пользователь авторизован или кэш отключен для отдельного запроса => отключаем только ЧТЕНИЕ данных, а запись в кэш свежих данных оставляем.
             // В контексте текущей логики работы со статьями авторизованный пользователь тоже должен получать закешированные статьи.
             var bypassCacheRead = request.BypassCache; // || userContext.IsAuthenticated 
@@ -37,11 +37,12 @@ namespace ArticlesService.Application.Common.Behaviors
 
             logger.LogDebug("Generated cache key: {Key} for request {Type}", finalKey, typeof(TRequest).Name);
 
-            logger.LogTrace("Fetching data from cache for key: {CacheKey}", finalKey);
+            logger.LogTrace("Fetching data from cache for key: {CacheKey}", finalKey);                      
 
+            // Важно: внутри фабрики используем token, который придет от HybridCache (для безопасности пула потоков)
             return await cacheService.GetOrSetAsync(
                 finalKey,
-                async (token) => await next(), 
+                factory: async (token) => await next(token), 
                 request.ExpirationSeconds,
                 request.LocalCacheExpirationSeconds,
                 bypassCacheRead,

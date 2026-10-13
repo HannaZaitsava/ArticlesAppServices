@@ -25,7 +25,8 @@ namespace ArticlesService.Application.DI
             {
                 // Регистрация всех хендлеров из этой сборки
                 cfg.RegisterServicesFromAssembly(assembly);
-                // Регистрация валидации, логирования и т.д.
+                // Регистрация валидации, логирования и т.д.               
+                cfg.AddOpenBehavior(typeof(UserEnrichmentBehavior<,>));
                 cfg.AddOpenBehavior(typeof(PerformanceBehavior<,>));
                 cfg.AddOpenBehavior(typeof(LoggingBehavior<,>));
                 cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));
