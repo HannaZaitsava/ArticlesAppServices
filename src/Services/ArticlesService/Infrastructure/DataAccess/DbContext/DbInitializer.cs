@@ -13,7 +13,7 @@ namespace ArticlesService.Infrastructure.DataAccess.DbContext
     {
         private readonly AppDbContext _dbContext;
         private readonly IHostEnvironment _environment;
-        private readonly ILogger<DbInitializer> _logger;        
+        private readonly ILogger<DbInitializer> _logger;
         private readonly RoleManager<IdentityRole<Guid>> _roleManager;
         private readonly UserManager<User> _userManager;
         private readonly IConfiguration _configuration;
@@ -21,9 +21,9 @@ namespace ArticlesService.Infrastructure.DataAccess.DbContext
 
         public DbInitializer(
             IHostEnvironment environment,
-            ILogger<DbInitializer> logger, 
-            AppDbContext dbContext, 
-            RoleManager<IdentityRole<Guid>> roleManager, 
+            ILogger<DbInitializer> logger,
+            AppDbContext dbContext,
+            RoleManager<IdentityRole<Guid>> roleManager,
             UserManager<User> userManager,
             TimeProvider timeProvider,
             IConfiguration configuration)
@@ -37,7 +37,7 @@ namespace ArticlesService.Infrastructure.DataAccess.DbContext
             _timeProvider = timeProvider;
         }
 
-        public async Task MigrateAsync(CancellationToken cancellationToken = default) 
+        public async Task MigrateAsync(CancellationToken cancellationToken = default)
         {
             Console.WriteLine($"CONN STRING: {Environment.GetEnvironmentVariable("ConnectionStrings__BaseDbConnection")}");
             try
@@ -45,7 +45,7 @@ namespace ArticlesService.Infrastructure.DataAccess.DbContext
                 if (_environment.IsDevelopment())
                 {
                     await _dbContext.Database.MigrateAsync(cancellationToken);
-                    await SeedDevelopmentDataAsync(cancellationToken);                  
+                    await SeedDevelopmentDataAsync(cancellationToken);
                 }
                 //if(environment.IsTest()) // TODO можно создать расширение для окружения
                 //{                
@@ -70,7 +70,7 @@ namespace ArticlesService.Infrastructure.DataAccess.DbContext
                 // In Docker/Kubernetes this will allow the system to restart the container or stop a bug
                 throw;
             }
-        }       
+        }
 
         private async Task ApplyProductionMigrationsAsync(CancellationToken cancellationToken = default)
         {
@@ -88,7 +88,7 @@ namespace ArticlesService.Infrastructure.DataAccess.DbContext
 
             // Отдельный метод для Production
             // Seed только справочников, если нужно
-            await SeedProductionDataAsync(cancellationToken); 
+            await SeedProductionDataAsync(cancellationToken);
         }
 
         private async Task SeedProductionDataAsync(CancellationToken cancellationToken = default)
@@ -111,24 +111,45 @@ namespace ArticlesService.Infrastructure.DataAccess.DbContext
 
         private async Task SeedDevelopmentDataAsync(CancellationToken cancellationToken = default)
         {
-            using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+            // Быстрая транзакция для базовых ролей и авторизуемых пользователей
+            using (var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken))
+            {
+                try
+                {
+                    await SeedRoles();
+                    await SeedUser();
+
+                    await transaction.CommitAsync(cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync(cancellationToken);
+
+                    _logger.LogCritical(ex, "Fatal database seeding error");
+                    throw;
+                }
+            }
+
+            // Генерация демо-контента (вне транзакции для экономии RAM)
             try
             {
-                await SeedRoles();
-                await SeedUser();
+                // Получаем значение из appsettings.json. По умолчанию - Small, альтернатива Large
+                string scale = _configuration["DbSeedSettings:Scale"] ?? "Small";
 
-                await transaction.CommitAsync(cancellationToken);
+                _logger.LogInformation("Starting content generation. Target scale: {Scale}...", scale);
+
+                DbDataSeeder.Seed(_dbContext, scale);
+
+                _logger.LogInformation("Content generation completed successfully.");
             }
             catch (Exception ex)
             {
-                await transaction.RollbackAsync(cancellationToken);
-
-                _logger.LogCritical(ex, "Fatal database seeding error");
+                _logger.LogError(ex, "Error occurred during generation of fake articles/comments");
                 throw;
             }
         }
         private async Task SeedRoles()
-        {            
+        {
             var roleNames = new[] { "Admin", "Member" };
 
             foreach (var roleName in roleNames)
@@ -138,7 +159,7 @@ namespace ArticlesService.Infrastructure.DataAccess.DbContext
                     var result = await _roleManager.CreateAsync(new IdentityRole<Guid>(roleName));
 
                     if (result.Succeeded)
-                    {                        
+                    {
                         _logger.LogInformation("Role '{RoleName}' created", roleName);
                     }
                     else
@@ -152,12 +173,12 @@ namespace ArticlesService.Infrastructure.DataAccess.DbContext
         private async Task SeedUser()
         {
             await CreateUser(email: "admin@gmail.com", password: "Admin111#", role: "Admin", firstName: "Alex", lastName: "Smith", phoneNumber: "+3776788989", true);
-            await CreateUser(email: "member@gmail.com", password: "Member111#", role: "Member", firstName: "Bob", lastName: "Fox", phoneNumber: "+3776787778", false);        
+            await CreateUser(email: "member@gmail.com", password: "Member111#", role: "Member", firstName: "Bob", lastName: "Fox", phoneNumber: "+3776787778", false);
         }
 
         private async Task CreateUser(
-            string email, string password, string role, 
-            string firstName, string lastName, 
+            string email, string password, string role,
+            string firstName, string lastName,
             string? phoneNumber, bool isAdmin = false)
         {
             var userExist = await _userManager.FindByEmailAsync(email);
@@ -177,7 +198,7 @@ namespace ArticlesService.Infrastructure.DataAccess.DbContext
 
                 var result = await _userManager.CreateAsync(user, password);
                 if (result.Succeeded)
-                {                           
+                {
                     await _userManager.AddToRoleAsync(user, role);
 
                     //var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
