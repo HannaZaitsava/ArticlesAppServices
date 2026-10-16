@@ -16,9 +16,13 @@
 
   <ItemGroup>
     <Compile Remove="DIExtensions\**" />
+    <Compile Remove="Middlewares\**" />
     <Content Remove="DIExtensions\**" />
+    <Content Remove="Middlewares\**" />
     <EmbeddedResource Remove="DIExtensions\**" />
+    <EmbeddedResource Remove="Middlewares\**" />
     <None Remove="DIExtensions\**" />
+    <None Remove="Middlewares\**" />
   </ItemGroup> 
 
   <ItemGroup>   
@@ -26,18 +30,18 @@
     <PackageReference Include="AspNetCore.HealthChecks.UI" Version="9.0.0" />   
     <PackageReference Include="AspNetCore.HealthChecks.UI.Client" Version="9.0.0" />   
     <PackageReference Include="IdentityModel" Version="5.2.0" />   
-    <PackageReference Include="KubernetesClient" Version="19.0.2" />   
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.11" />   
+    <PackageReference Include="KubernetesClient" Version="21.0.8" />   
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.13" />   
     <PackageReference Include="Microsoft.AspNetCore.OData" Version="9.5.0" />   
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.10" />   
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.10">
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.13" />   
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.13">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.23.0" />
     <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="10.2.3" />
-    <PackageReference Include="Swashbuckle.AspNetCore.Annotations" Version="10.2.3" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="10.3.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore.Annotations" Version="10.3.0" />
     <PackageReference Include="Swashbuckle.AspNetCore.Filters" Version="10.0.1" />
   </ItemGroup>
 
@@ -50,7 +54,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Middlewares\" />
     <Folder Include="Models\SwaggerExamples\" />
   </ItemGroup>
 
