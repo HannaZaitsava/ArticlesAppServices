@@ -7,9 +7,14 @@ namespace ArticlesService.Infrastructure.DataAccess.DbContext.Interceptors
 {
     public class AuditAndSoftDeleteInterceptor : SaveChangesInterceptor
     {
-        private readonly IUserContext? _userContext; 
+        private readonly IUserContext? _userContext;
+        private readonly TimeProvider _timeProvider;
 
-        public AuditAndSoftDeleteInterceptor(IUserContext? userContext = null) => _userContext = userContext;
+        public AuditAndSoftDeleteInterceptor(TimeProvider timeProvider, IUserContext? userContext = null)
+        {
+            _userContext = userContext;
+            _timeProvider = timeProvider;
+        }
 
         public override InterceptionResult<int> SavingChanges(
           DbContextEventData eventData,
@@ -17,7 +22,7 @@ namespace ArticlesService.Infrastructure.DataAccess.DbContext.Interceptors
         {           
             if (eventData.Context is not null)
             {
-                UpdateAuditableAndSodtDeleteEntities(eventData.Context);
+                UpdateAuditableAndSoftDeleteEntities(eventData.Context);
             }
 
             return base.SavingChanges(eventData, result);
@@ -30,17 +35,17 @@ namespace ArticlesService.Infrastructure.DataAccess.DbContext.Interceptors
         {      
             if (eventData.Context is not null)
             {
-                UpdateAuditableAndSodtDeleteEntities(eventData.Context);
+                UpdateAuditableAndSoftDeleteEntities(eventData.Context);
             }
 
             return base.SavingChangesAsync(eventData, result, cancellationToken);
         }
 
-        private void UpdateAuditableAndSodtDeleteEntities(Microsoft.EntityFrameworkCore.DbContext context)
+        private void UpdateAuditableAndSoftDeleteEntities(Microsoft.EntityFrameworkCore.DbContext context)
         {
             if (context is null) return;
 
-            var now = DateTimeOffset.UtcNow;
+            var now = _timeProvider.GetUtcNow();
             var userId = _userContext?.UserId ?? Guid.Empty;
 
             var entries = context.ChangeTracker.Entries()

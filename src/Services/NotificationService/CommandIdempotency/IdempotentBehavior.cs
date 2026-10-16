@@ -8,7 +8,7 @@ namespace NotificationService.CommandIdempotency
     public class IdempotentBehavior<TRequest, TResponse>(
       IDistributedCache cache,
       IOptions<CacheOptions> cacheOptions,
-      TimeProvider dateTimeProvider,
+      TimeProvider timeProvider,
       ILogger<IdempotentBehavior<TRequest, TResponse>> logger)
       : IPipelineBehavior<TRequest, TResponse>
       where TRequest : IIdempotentCommand
@@ -37,7 +37,7 @@ namespace NotificationService.CommandIdempotency
             };
 
             // время, когда был записан ключ 
-            var timestamp = dateTimeProvider.GetUtcNow().ToString("o"); // строгий международный текстовый стандарт - ISO 8601 Round-trip date/time pattern
+            var timestamp = timeProvider.GetUtcNow().ToString("o"); // строгий международный текстовый стандарт - ISO 8601 Round-trip date/time pattern
             await cache.SetStringAsync(cacheKey, timestamp, distributedCacheEntryOptions, cancellationToken);
 
             try

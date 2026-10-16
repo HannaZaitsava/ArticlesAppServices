@@ -3,6 +3,7 @@ using ArticlesService.Infrastructure.DataAccess.Abstractions;
 using ArticlesService.Infrastructure.DataAccess.Extensions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
@@ -15,19 +16,25 @@ namespace ArticlesService.Infrastructure.DataAccess.DbContext
         private readonly ILogger<DbInitializer> _logger;        
         private readonly RoleManager<IdentityRole<Guid>> _roleManager;
         private readonly UserManager<User> _userManager;
+        private readonly IConfiguration _configuration;
+        private readonly TimeProvider _timeProvider;
 
         public DbInitializer(
             IHostEnvironment environment,
             ILogger<DbInitializer> logger, 
             AppDbContext dbContext, 
             RoleManager<IdentityRole<Guid>> roleManager, 
-            UserManager<User> userManager)
+            UserManager<User> userManager,
+            TimeProvider timeProvider,
+            IConfiguration configuration)
         {
             _dbContext = dbContext;
             _roleManager = roleManager;
             _userManager = userManager;
             _environment = environment;
             _logger = logger;
+            _configuration = configuration;
+            _timeProvider = timeProvider;
         }
 
         public async Task MigrateAsync(CancellationToken cancellationToken = default) 
@@ -165,7 +172,7 @@ namespace ArticlesService.Infrastructure.DataAccess.DbContext
                     PhoneNumber = phoneNumber,
                     EmailConfirmed = true,
                     IsAdmin = isAdmin,
-                    CreatedOn = DateTimeOffset.UtcNow,
+                    CreatedOn = _timeProvider.GetUtcNow(),
                 };
 
                 var result = await _userManager.CreateAsync(user, password);

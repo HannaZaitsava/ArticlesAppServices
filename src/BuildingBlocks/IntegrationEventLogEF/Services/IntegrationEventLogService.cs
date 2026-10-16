@@ -235,7 +235,7 @@ public class IntegrationEventLogService<TContext> : IIntegrationEventLogService,
     public async Task ResetStaleInProgressEventsAsync(TimeSpan timeout)
     {
         // Теперь мы точно знаем, КОГДА воркер взял эту запись в работу
-        var cutoffTime = DateTimeOffset.UtcNow.Subtract(timeout);
+        var cutoffTime = _timeProvider.GetUtcNow().Subtract(timeout);
 
         await _context.Set<IntegrationEventLogEntry>()
             .Where(e => e.State == EventStateEnum.InProgress && e.LastAttemptOnUtc < cutoffTime) 
