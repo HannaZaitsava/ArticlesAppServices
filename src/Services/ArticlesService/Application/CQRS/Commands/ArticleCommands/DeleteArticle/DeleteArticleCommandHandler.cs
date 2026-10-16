@@ -25,7 +25,7 @@ namespace ArticlesService.Application.CQRS.Commands.ArticleCommands.DeleteArticl
                 return Result<bool>.Failure([ArticleErrors.ArticleNotFound(articleId)]);
             }
 
-            if (!userContext.IsAuthenticated || articleEntity.CreatedBy != userContext.UserId)
+            if (!userContext.IsAuthenticated || articleEntity.AuthorId != userContext.UserId)
             {
                 // Можно вернуть 403, но возвращаем NotFound для безопасности, чтобы скрыть сам факт существования статьи.
                 // Чтобы злоумышленник не мог перебором GUID узнать, существует ли статья в системе

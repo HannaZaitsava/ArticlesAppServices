@@ -25,6 +25,7 @@ namespace ArticlesService.Infrastructure.DataAccess.Repositories.ConcreteReposit
         {
             return await _dbSet
                 .TrackChanges(trackChanges)
+                .Include(a => a.Author)
                 .Include(a => a.Tags)
                 .Include(a => a.Categories)
                 .Include(a => a.Comments)

@@ -17,7 +17,7 @@ namespace ArticlesApp.Infrastructure.DataAccess.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.10")
+                .HasAnnotation("ProductVersion", "10.0.13")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -28,15 +28,18 @@ namespace ArticlesApp.Infrastructure.DataAccess.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<Guid>("AuthorId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Content")
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
 
-                    b.Property<Guid>("CreatedBy")
-                        .HasColumnType("uuid");
-
                     b.Property<DateTimeOffset>("CreatedOn")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CreatorId")
+                        .HasColumnType("uuid");
 
                     b.Property<Guid?>("DeletedBy")
                         .HasColumnType("uuid");
@@ -68,11 +71,14 @@ namespace ArticlesApp.Infrastructure.DataAccess.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CreatedBy");
-
                     b.HasIndex("CreatedOn");
 
+                    b.HasIndex("CreatorId");
+
                     b.HasIndex("DeletedOn");
+
+                    b.HasIndex("AuthorId", "CreatedOn")
+                        .HasDatabaseName("IX_Articles_AuthorId_CreatedOn");
 
                     b.HasIndex("CreatedOn", "Id")
                         .HasDatabaseName("IX_Articles_CreatedOn_Id");
@@ -152,11 +158,14 @@ namespace ArticlesApp.Infrastructure.DataAccess.Migrations
                     b.Property<Guid>("ArticleId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("CreatedBy")
+                    b.Property<Guid>("AuthorId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTimeOffset>("CreatedOn")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CreatorId")
+                        .HasColumnType("uuid");
 
                     b.Property<Guid?>("DeletedBy")
                         .HasColumnType("uuid");
@@ -185,15 +194,18 @@ namespace ArticlesApp.Infrastructure.DataAccess.Migrations
 
                     b.HasIndex("ArticleId");
 
-                    b.HasIndex("CreatedBy");
-
                     b.HasIndex("CreatedOn");
+
+                    b.HasIndex("CreatorId");
 
                     b.HasIndex("DeletedOn");
 
                     b.HasIndex("ParentId");
 
                     b.HasIndex("RootCommentId");
+
+                    b.HasIndex("AuthorId", "CreatedOn")
+                        .HasDatabaseName("IX_Comments_AuthorId_CreatedOn");
 
                     b.HasIndex("CreatedOn", "Id")
                         .HasDatabaseName("IX_Comments_CreatedOn_Id");
@@ -308,11 +320,11 @@ namespace ArticlesApp.Infrastructure.DataAccess.Migrations
                         .IsConcurrencyToken()
                         .HasColumnType("text");
 
-                    b.Property<Guid?>("CreatedBy")
-                        .HasColumnType("uuid");
-
                     b.Property<DateTimeOffset>("CreatedOn")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CreatorId")
+                        .HasColumnType("uuid");
 
                     b.Property<Guid?>("DeletedBy")
                         .HasColumnType("uuid");
@@ -385,12 +397,24 @@ namespace ArticlesApp.Infrastructure.DataAccess.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CreatedOn");
+
+                    b.HasIndex("CreatorId");
+
+                    b.HasIndex("DeletedOn");
+
                     b.HasIndex("NormalizedEmail")
                         .HasDatabaseName("EmailIndex");
 
                     b.HasIndex("NormalizedUserName")
                         .IsUnique()
                         .HasDatabaseName("UserNameIndex");
+
+                    b.HasIndex("CreatedOn", "Id")
+                        .HasDatabaseName("IX_AspNetUsers_CreatedOn_Id");
+
+                    b.HasIndex("LastName", "FirstName")
+                        .HasDatabaseName("IX_AspNetUsers_LastName_FirstName");
 
                     b.ToTable("AspNetUsers", (string)null);
                 });
@@ -595,11 +619,13 @@ namespace ArticlesApp.Infrastructure.DataAccess.Migrations
 
             modelBuilder.Entity("ArticlesService.Domain.Entities.Article", b =>
                 {
-                    b.HasOne("ArticlesService.Domain.Entities.User", null)
+                    b.HasOne("ArticlesService.Domain.Entities.User", "Author")
                         .WithMany("Articles")
-                        .HasForeignKey("CreatedBy")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasForeignKey("AuthorId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("Author");
                 });
 
             modelBuilder.Entity("ArticlesService.Domain.Entities.Comment", b =>
@@ -610,10 +636,10 @@ namespace ArticlesApp.Infrastructure.DataAccess.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("ArticlesService.Domain.Entities.User", null)
+                    b.HasOne("ArticlesService.Domain.Entities.User", "Author")
                         .WithMany("Comments")
-                        .HasForeignKey("CreatedBy")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasForeignKey("AuthorId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("ArticlesService.Domain.Entities.Comment", "Parent")
@@ -627,6 +653,8 @@ namespace ArticlesApp.Infrastructure.DataAccess.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Article");
+
+                    b.Navigation("Author");
 
                     b.Navigation("Parent");
 

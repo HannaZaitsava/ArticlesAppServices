@@ -6,8 +6,8 @@
         public string Text { get; init; } = default!;                
         public Guid ArticleId { get; init; }
 
-        public Guid? CreatedBy { get; init; }
-        public string CreatorName { get; init; } = default!;
+        public Guid AuthorId { get; init; }
+        public string AuthorName { get; init; } = default!;
 
         public DateTimeOffset CreatedOn { get; init; } = DateTimeOffset.Now;
         public DateTimeOffset? LastModifiedOn { get; init; }

@@ -16,8 +16,8 @@ namespace ArticlesService.Application.DTOs.Articles
         public DateTimeOffset? PublicationDate { get; init; }
 
         public DateTimeOffset CreatedOn { get; init; } = DateTimeOffset.Now;
-        public Guid CreatedBy { get; init; }
-        public string CreatorName { get; init; } = default!; 
+        public Guid AuthorId { get; init; }
+        public string AuthorName { get; init; } = default!; 
 
         public IReadOnlyCollection<ArticleCategoryShotrInfoResponseDTO> Categories { get; init; } = [];
         public IReadOnlyCollection<TagShortInfoResponseDTO> Tags { get; init; } = [];

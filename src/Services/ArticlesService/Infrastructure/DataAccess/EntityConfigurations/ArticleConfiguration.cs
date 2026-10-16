@@ -13,11 +13,15 @@ namespace ArticlesService.Infrastructure.DataAccess.EntityConfigurations
         {
             builder.HasKey(x => x.Id);
 
+            // Составной индекс для cursor-пагинации по дате создания и Id
             builder.HasIndex(a => new { a.CreatedOn, a.Id })
                 .HasDatabaseName("IX_Articles_CreatedOn_Id");
 
             builder.HasIndex(a => new { a.Title, a.Id })
                 .HasDatabaseName("IX_Articles_Title_Id");
+
+            builder.HasIndex(a => new { a.AuthorId, a.CreatedOn })
+                .HasDatabaseName("IX_Articles_AuthorId_CreatedOn");
 
             builder.Property(x => x.Status)
                 .IsRequired();
@@ -58,15 +62,16 @@ namespace ArticlesService.Infrastructure.DataAccess.EntityConfigurations
                       j.HasKey(at => new { at.ArticleId, at.TagId });
                   });
 
+            builder
+              .HasOne(a => a.Author)
+              .WithMany(u => u.Articles)
+              .HasForeignKey(e => e.AuthorId)
+              .OnDelete(DeleteBehavior.Restrict)
+              .IsRequired();
+
             // Auditable
             builder.ApplyAuditProperties();
-            builder.ApplySoftDeleteProperties();            
-            builder
-               .HasOne<User>()
-               .WithMany(u => u.Articles)
-               .HasForeignKey(e => e.CreatedBy)
-               .OnDelete(DeleteBehavior.Cascade)
-               .IsRequired();           
+            builder.ApplySoftDeleteProperties();
         }
     }
 }

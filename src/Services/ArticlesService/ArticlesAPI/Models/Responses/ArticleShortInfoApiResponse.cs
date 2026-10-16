@@ -10,11 +10,11 @@ namespace ArticlesService.ArticlesAPI.Models.Responses
         public string Title { get; init; } = null!;
         public string PreviewText { get; init; } = null!;
 
-        public DateTimeOffset PublicationDate { get; init; } = DateTimeOffset.UtcNow;
+        public DateTimeOffset PublicationDate { get; init; }
 
-        public DateTimeOffset CreatedOn { get; init; } = DateTimeOffset.UtcNow;
-        public Guid CreatedBy { get; init; }
-        public string CreatorName { get; init; } = default!;
+        public DateTimeOffset CreatedOn { get; init; }
+        public Guid AuthorId { get; init; }
+        public string AuthorName { get; init; } = default!;
 
         public int CommentsTotalCount { get; init; }
 

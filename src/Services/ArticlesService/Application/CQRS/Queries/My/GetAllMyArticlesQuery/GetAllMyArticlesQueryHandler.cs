@@ -16,7 +16,7 @@ namespace ArticlesService.Application.CQRS.Queries.My.GetAllMyArticlesQuery
             var articles = await articleRepository.GetArticlesOffsetPagedListProjectedAsync<ArticleShortInfoResponseDTO>(
                 sort: request.Sorts,
                 paginationParameters: request.PaginationParameters,
-                filterPredicate: article => article.Status == request.Status && article.CreatedBy == request.UserContext.UserId,
+                filterPredicate: article => article.Status == request.Status && article.AuthorId == request.UserContext.UserId,
                 ct: cancellationToken);
 
             return Result<OffsetPagedResult<ArticleShortInfoResponseDTO>>.Success(articles);

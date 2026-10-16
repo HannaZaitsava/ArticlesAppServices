@@ -32,7 +32,7 @@ namespace ArticlesService.Application.CQRS.Queries.ArticleQueries.GetArticleQuer
             }
 
             // Если статья НЕ опубликована, проверяем, авторизован ли пользователь и является ли он автором
-            if (!userContext.IsAuthenticated || articleResponseDTO.CreatedBy != userContext.UserId)
+            if (!userContext.IsAuthenticated || articleResponseDTO.AuthorId != userContext.UserId)
             {
                 // Можно вернуть 403, но возвращаем NotFound для безопасности, чтобы скрыть сам факт существования черновика.
                 // Чтобы злоумышленник не мог перебором GUID узнать, существует ли статья в системе

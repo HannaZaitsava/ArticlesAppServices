@@ -27,7 +27,7 @@ namespace ArticlesService.Application.CQRS.Commands.CommentCommands.UpdateCommen
                 return Result<bool>.Failure([CommentErrors.CommentNotFound(commentId)]);
             }
 
-            if (!userContext.IsAuthenticated || commentEntity.CreatedBy != userContext.UserId)
+            if (!userContext.IsAuthenticated || commentEntity.AuthorId != userContext.UserId)
             {
                 // Можно вернуть 403, но возвращаем NotFound для безопасности, чтобы скрыть сам факт существования комментария.
                 // Чтобы злоумышленник не мог перебором GUID узнать, существует ли комментарий в системе

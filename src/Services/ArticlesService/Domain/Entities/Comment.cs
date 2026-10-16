@@ -19,10 +19,15 @@ namespace ArticlesService.Domain.Entities
 
     public class Comment: BaseAuditableEntity
     {
-        public string Text { get; set; } = default!;  
+        public Guid AuthorId { get; set; }
+        public User Author { get; set; } = null!;
 
+
+        public Guid ArticleId { get; set; }
         public Article Article { get; set; } = null!;
-        public Guid ArticleId { get; set; }        
+        
+
+        public string Text { get; set; } = default!;
 
 
         // Hierarchy (Self-reference)

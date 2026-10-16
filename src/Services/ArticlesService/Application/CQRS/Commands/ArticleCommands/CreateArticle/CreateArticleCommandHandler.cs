@@ -31,6 +31,7 @@ namespace ArticlesService.Application.CQRS.Commands.ArticleCommands.CreateArticl
             }
 
             var article = mapper.Map<Article>(request);
+            article.AuthorId = userContext.UserId!.Value;
 
             // TODO: пеервести анемичную доменную модель на богатую. Перенести урезание контента в метод SetPreviewText самой сущности
             if (!string.IsNullOrWhiteSpace(article.Content))
@@ -94,7 +95,7 @@ namespace ArticlesService.Application.CQRS.Commands.ArticleCommands.CreateArticl
                     cacheContext.AddTag(CacheTags.Tag(tag));
             }
             
-            var articleResponseDTO = mapper.Map<ArticleResponseDTO>((Article: article, CreatorName: userContext.UserName));
+            var articleResponseDTO = mapper.Map<ArticleResponseDTO>((Article: article, AuthorName: userContext.UserName));
 
             return Result<ArticleResponseDTO>.Success(articleResponseDTO);
         }

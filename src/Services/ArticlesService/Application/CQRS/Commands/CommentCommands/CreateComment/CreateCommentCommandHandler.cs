@@ -1,4 +1,5 @@
-﻿using ArticlesService.Application.Abstractions.DataAccess;
+﻿using ArticlesService.Application.Abstractions;
+using ArticlesService.Application.Abstractions.DataAccess;
 using ArticlesService.Domain.Entities;
 using ArticlesService.Domain.Errors;
 using ArticlesService.Domain.Result;
@@ -10,6 +11,7 @@ namespace ArticlesService.Application.CQRS.Commands.CommentCommands.CreateCommen
    internal class CreateCommentCommandHandler(
        IBaseRepository<Comment> commentRepository,
        IBaseRepository<Article> articleRepository,
+       IUserContext userContext,
        IMapper mapper) 
         : IRequestHandler<CreateCommentCommand, Result<Guid>>
     {       
@@ -25,6 +27,7 @@ namespace ArticlesService.Application.CQRS.Commands.CommentCommands.CreateCommen
             }
 
             var comment = mapper.Map<Comment>(request);
+            comment.AuthorId = userContext.UserId!.Value;
 
             if (request.ParentId is Guid parentId)
             {

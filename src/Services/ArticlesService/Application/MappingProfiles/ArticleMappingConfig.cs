@@ -10,7 +10,8 @@ namespace ArticlesService.Application.MappingProfiles
         public void Register(TypeAdapterConfig config)
         {            
             config.NewConfig<Article, ArticleShortInfoResponseDTO>()
-                .Map(dest => dest.CommentsTotalCount, src => src.Comments.Count);
+                .Map(dest => dest.CommentsTotalCount, src => src.Comments.Count)
+                .Map(dest => dest.AuthorName, src => src.Author.UserName); 
 
             config.NewConfig<UpdateArticleCommand, Article>()
                 .IgnoreNullValues(true)
@@ -21,9 +22,12 @@ namespace ArticlesService.Application.MappingProfiles
                 .Ignore(dest => dest.PublicationDate);
                 
 
-            config.NewConfig<(Article article, string creatorName), ArticleResponseDTO>()
-               .Map(dest => dest.CreatorName, src => src.creatorName)
+            config.NewConfig<(Article article, string AuthorName), ArticleResponseDTO>()
+               .Map(dest => dest.AuthorName, src => src.AuthorName)
                .Map(dest => dest, src => src.article);
+
+            config.NewConfig<Article, ArticleResponseDTO>()
+                .Map(dest => dest.AuthorName, src => src.Author.UserName);
         } 
     }
 }

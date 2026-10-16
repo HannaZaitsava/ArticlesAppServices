@@ -8,6 +8,9 @@ namespace ArticlesService.Domain.Entities
 {
     public class Article : BaseAuditableEntity
     {
+        public Guid AuthorId { get; set; }
+        public User Author { get; set; } = null!;
+
         public string Title { get; set; } = null!;
         public string? Content { get; set; } 
         public string? PreviewText { get; set; }
@@ -35,7 +38,7 @@ namespace ArticlesService.Domain.Entities
             PublicationDate = publishedAt;
             Status = ArticleStatus.Published;
 
-            RaiseDomainEvent(new ArticlePublishedDomainEvent(Id, Title, CreatedBy!.Value, PublicationDate.Value));
+            RaiseDomainEvent(new ArticlePublishedDomainEvent(Id, Title, AuthorId, PublicationDate.Value));
 
             return Result<bool>.Success(true);
         }

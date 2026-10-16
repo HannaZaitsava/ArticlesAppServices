@@ -19,7 +19,7 @@ namespace ArticlesService.Infrastructure.DataAccess.DbContext.Interceptors
         public override InterceptionResult<int> SavingChanges(
           DbContextEventData eventData,
           InterceptionResult<int> result)
-        {           
+        {
             if (eventData.Context is not null)
             {
                 UpdateAuditableAndSoftDeleteEntities(eventData.Context);
@@ -32,7 +32,7 @@ namespace ArticlesService.Infrastructure.DataAccess.DbContext.Interceptors
             DbContextEventData eventData,
             InterceptionResult<int> result,
             CancellationToken cancellationToken = default)
-        {      
+        {
             if (eventData.Context is not null)
             {
                 UpdateAuditableAndSoftDeleteEntities(eventData.Context);
@@ -58,14 +58,32 @@ namespace ArticlesService.Infrastructure.DataAccess.DbContext.Interceptors
                 {
                     if (entry.State == EntityState.Added)
                     {
-                        auditable.CreatedOn = now;
-                        auditable.CreatedBy = userId;
+                        if (auditable.CreatedOn == default)
+                        {
+                            auditable.CreatedOn = now;
+                        }
+
+                        // не заполнять принудительно, т.к. это поле может быть заполнено командой или фоновым воркером,
+                        // который должен создавать статьи от имени конкретных авторов или системные статьи
+                        if (auditable.CreatorId == Guid.Empty)
+                        {
+                            auditable.CreatorId = userId;
+                        }
                     }
 
                     if (entry.State is EntityState.Added or EntityState.Modified)
                     {
-                        auditable.LastModifiedOn = now;
-                        auditable.LastModifiedBy = userId;
+                        if (auditable.LastModifiedOn == null || auditable.LastModifiedOn == default(DateTimeOffset))
+                        {
+                            auditable.LastModifiedOn = now;
+                        }
+
+                        // не заполнять принудительно, т.к. это поле может быть заполнено командой или фоновым воркером,
+                        // который должен обновлять статьи от имени конкретных авторов или системные статьи
+                        if (auditable.LastModifiedBy == null || auditable.LastModifiedBy == Guid.Empty)
+                        {
+                            auditable.LastModifiedBy = userId;
+                        }
                     }
                 }
 
@@ -75,8 +93,15 @@ namespace ArticlesService.Infrastructure.DataAccess.DbContext.Interceptors
                     entry.State = EntityState.Modified;
 
                     //softDelete.IsDeleted = true;
-                    softDelete.DeletedOn = now;
-                    softDelete.DeletedBy = userId;
+                    if (softDelete.DeletedOn == null)
+                    {
+                        softDelete.DeletedOn = now;
+                    }
+
+                    if (softDelete.DeletedBy == null || softDelete.DeletedBy == Guid.Empty)
+                    {
+                        softDelete.DeletedBy = userId;
+                    }
 
                     // Also counts as an update
                     if (entry.Entity is IAuditableEntity a)

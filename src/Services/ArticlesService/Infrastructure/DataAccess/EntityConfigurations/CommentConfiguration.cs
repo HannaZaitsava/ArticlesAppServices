@@ -20,6 +20,9 @@ namespace ArticlesService.Infrastructure.DataAccess.EntityConfigurations
                 .HasIndex(a => new { a.CreatedOn, a.Id })
                 .HasDatabaseName("IX_Comments_CreatedOn_Id");
 
+            builder.HasIndex(a => new { a.AuthorId, a.CreatedOn })
+               .HasDatabaseName("IX_Comments_AuthorId_CreatedOn");
+
 
             builder.Property(x => x.Text)
                 .IsRequired()
@@ -50,15 +53,16 @@ namespace ArticlesService.Infrastructure.DataAccess.EntityConfigurations
                    // For the case of SoftDelete of Cascade Hiding: NoAction in order to save the whole banch of conversation if the parent comment is deleted
                    .OnDelete(DeleteBehavior.NoAction);
 
+            builder
+               .HasOne(a => a.Author)
+               .WithMany(u => u.Comments)
+               .HasForeignKey(e => e.AuthorId)
+               .OnDelete(DeleteBehavior.Restrict)
+               .IsRequired();
+
             // Auditable
             builder.ApplyAuditProperties();
-            builder.ApplySoftDeleteProperties();
-            builder
-               .HasOne<User>()
-               .WithMany(u => u.Comments)
-               .HasForeignKey(e => e.CreatedBy)
-               .OnDelete(DeleteBehavior.Cascade)
-               .IsRequired();    
+            builder.ApplySoftDeleteProperties();            
         }
     }
 }

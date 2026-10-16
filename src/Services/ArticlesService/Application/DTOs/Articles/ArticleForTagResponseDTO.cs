@@ -6,7 +6,7 @@
         public string Title { get; init; } = null!;
         public DateTimeOffset? PublicationDate { get; init; }
        
-        public Guid CreatedBy { get; init; } 
-        public string CreatorName { get; init; } = default!; 
+        public Guid AuthorId { get; init; } 
+        public string AuthorName { get; init; } = default!; 
     }
 }

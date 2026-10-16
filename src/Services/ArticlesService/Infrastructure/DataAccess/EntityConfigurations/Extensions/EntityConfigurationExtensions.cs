@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using ArticlesService.Domain.Entities.Base;
+﻿using ArticlesService.Domain.Entities.Base;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace ArticlesService.Infrastructure.DataAccess.EntityConfigurations.Extensions
@@ -10,8 +7,9 @@ namespace ArticlesService.Infrastructure.DataAccess.EntityConfigurations.Extensi
     {
         public static void ApplyAuditProperties<T>(this EntityTypeBuilder<T> builder) where T : class, IAuditableEntity
         {
-            builder.Property(e => e.CreatedBy).IsRequired();  
-            
+            builder.Property(e => e.CreatorId).IsRequired();
+
+            builder.HasIndex(a => a.CreatorId);
             builder.HasIndex(e => e.CreatedOn);
         }
 
